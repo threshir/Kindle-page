@@ -2,243 +2,241 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=1024, initial-scale=1.0">
+  <meta name="viewport" content="width=758, initial-scale=1.0">
   <title>Kindle Dashboard</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      background: #fff; color: #000;
+
+    /* ══ 强制横屏核心 CSS ══
+       Kindle Paperwhite 竖屏物理分辨率: 758 × 1024
+       旋转后我们得到逻辑宽度 1024, 高度 758
+    */
+    html, body {
+      width: 758px;
+      height: 1024px;
+      overflow: hidden;
+    }
+
+    #rotated-wrapper {
+      width: 1024px;
+      height: 758px;
+      transform-origin: top left;
+      transform: rotate(90deg) translateY(-758px);
+      overflow: hidden;
+      position: absolute;
+      top: 0;
+      left: 0;
+      background: #fff;
+      color: #000;
       font-family: Georgia, "Times New Roman", serif;
       font-size: 14px;
       padding: 10px;
-      width: 1024px;
-      margin: 0 auto;
-      overflow-x: hidden;
     }
 
-    /* ── 顶栏：时钟 + 天气今日 ── */
+    /* ── 顶栏 ── */
     #top-bar {
       display: flex;
       align-items: stretch;
       gap: 10px;
       border-bottom: 3px double #000;
-      padding-bottom: 10px;
-      margin-bottom: 10px;
+      padding-bottom: 8px;
+      margin-bottom: 8px;
+      height: 130px;
     }
 
-    /* 时钟 */
     #clock-block {
       text-align: center;
-      min-width: 200px;
+      min-width: 190px;
       border-right: 2px solid #000;
-      padding-right: 14px;
+      padding-right: 12px;
       display: flex;
       flex-direction: column;
       justify-content: center;
+      flex-shrink: 0;
     }
-    #time-display { font-size: 54px; font-weight: bold; letter-spacing: 3px; line-height: 1; }
-    #date-display { font-size: 15px; margin-top: 4px; }
+    #time-display { font-size: 50px; font-weight: bold; letter-spacing: 3px; line-height: 1; }
+    #date-display { font-size: 14px; margin-top: 4px; }
     #weekday-display { font-size: 12px; color: #444; margin-top: 2px; }
 
-    /* 今日天气 */
     #weather-today-block {
-      min-width: 180px;
+      min-width: 175px;
       border-right: 2px solid #000;
-      padding: 0 14px;
+      padding: 0 12px;
       display: flex;
       flex-direction: column;
       justify-content: center;
+      flex-shrink: 0;
     }
-    #weather-main { display: flex; align-items: center; gap: 10px; }
-    #weather-icon { font-size: 36px; line-height: 1; }
-    #weather-temp { font-size: 28px; font-weight: bold; }
-    #weather-desc { font-size: 13px; color: #333; }
+    #weather-main { display: flex; align-items: center; gap: 8px; }
+    #weather-icon { font-size: 32px; line-height: 1; }
+    #weather-temp { font-size: 26px; font-weight: bold; }
+    #weather-desc { font-size: 12px; color: #333; }
     #weather-detail { font-size: 11px; color: #555; margin-top: 3px; }
-    #weather-status { font-size: 10px; color: #999; margin-top: 4px; }
+    #weather-status { font-size: 10px; color: #999; margin-top: 3px; }
 
-    /* 预报 */
     #forecast-block {
       flex: 1;
       display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
-    #forecast-row {
-      display: flex;
-      gap: 0;
-      height: 100%;
       align-items: center;
     }
+    #forecast-row { display: flex; width: 100%; }
     .fc-day {
-      flex: 1;
-      text-align: center;
+      flex: 1; text-align: center;
       border-right: 1px dotted #aaa;
-      padding: 4px 2px;
+      padding: 2px;
     }
     .fc-day:last-child { border-right: none; }
-    .fc-label { font-size: 11px; font-weight: bold; }
-    .fc-icon { font-size: 20px; margin: 3px 0; }
-    .fc-hi { font-weight: bold; font-size: 12px; }
-    .fc-lo { color: #666; font-size: 11px; }
+    .fc-label { font-size: 10px; font-weight: bold; }
+    .fc-icon { font-size: 18px; margin: 2px 0; }
+    .fc-hi { font-weight: bold; font-size: 11px; }
+    .fc-lo { color: #666; font-size: 10px; }
     .fc-pop { font-size: 10px; color: #555; }
 
-    /* ── 主体：左日历 + 右待办 ── */
+    /* ── 主体 ── */
     #main-body {
       display: flex;
       gap: 10px;
-      align-items: flex-start;
+      height: 590px;
+    }
+
+    .section-title {
+      font-size: 10px; font-weight: bold;
+      letter-spacing: 2px; text-transform: uppercase;
+      border-bottom: 1px solid #000;
+      padding-bottom: 3px; margin-bottom: 6px;
     }
 
     /* 日历 */
     #cal-section {
       flex: 1;
       border: 2px solid #000;
-      padding: 8px 12px;
-      min-height: 400px;
+      padding: 7px 10px;
+      overflow-y: auto;
+      height: 100%;
     }
-
-    .section-title {
-      font-size: 11px; font-weight: bold;
-      letter-spacing: 2px; text-transform: uppercase;
-      border-bottom: 1px solid #000;
-      padding-bottom: 3px; margin-bottom: 7px;
-    }
-
-    /* 日历：按时间轴显示 */
     .cal-event {
-      display: flex;
-      gap: 8px;
-      padding: 5px 0;
+      display: flex; gap: 7px;
+      padding: 4px 0;
       border-bottom: 1px dotted #ccc;
       align-items: flex-start;
     }
     .cal-event:last-child { border-bottom: none; }
     .cal-time {
-      font-size: 12px; font-weight: bold;
-      min-width: 55px;
-      font-family: monospace;
-      padding-top: 1px;
-      flex-shrink: 0;
+      font-size: 11px; font-weight: bold;
+      min-width: 50px; font-family: monospace;
+      padding-top: 1px; flex-shrink: 0;
     }
     .cal-dot {
-      width: 7px; height: 7px;
-      border: 2px solid #000;
-      border-radius: 50%;
-      margin-top: 4px;
-      flex-shrink: 0;
+      width: 6px; height: 6px;
+      border: 2px solid #000; border-radius: 50%;
+      margin-top: 4px; flex-shrink: 0;
     }
     .cal-body { flex: 1; }
-    .cal-title { font-size: 14px; line-height: 1.3; }
-    .cal-meta { font-size: 11px; color: #666; margin-top: 2px; }
-    .cal-past { opacity: 0.38; }
+    .cal-title { font-size: 13px; line-height: 1.3; }
+    .cal-meta { font-size: 10px; color: #666; margin-top: 1px; }
+    .cal-past { opacity: 0.35; }
     .cal-now .cal-dot { background: #000; }
     .cal-now .cal-title { font-weight: bold; }
     .cal-now .cal-time::before { content: "▶ "; }
     .cal-allday .cal-dot { border-radius: 2px; background: #555; border-color: #555; }
     .no-event { font-size: 13px; color: #777; text-align: center; padding: 20px 0; }
-    #cal-status { font-size: 10px; color: #999; text-align: right; margin-top: 5px; }
+    #cal-status { font-size: 10px; color: #999; text-align: right; margin-top: 4px; }
 
-    /* 右侧：待办 */
+    /* 右侧 */
     #right-col {
-      width: 240px;
+      width: 220px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
+      flex-shrink: 0;
     }
     #todo-section {
       border: 2px solid #000;
-      padding: 8px 12px;
+      padding: 7px 10px;
+      flex: 1;
+      overflow-y: auto;
     }
     .todo-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 7px;
-      padding: 5px 0;
+      display: flex; align-items: flex-start;
+      gap: 6px; padding: 4px 0;
       border-bottom: 1px dotted #ccc;
-      font-size: 13px;
+      font-size: 12px;
     }
     .todo-item:last-child { border-bottom: none; }
     .todo-check {
-      width: 14px; height: 14px;
-      border: 2px solid #000;
-      flex-shrink: 0;
-      margin-top: 2px;
+      width: 13px; height: 13px;
+      border: 2px solid #000; flex-shrink: 0;
+      margin-top: 1px; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      cursor: pointer; font-size: 10px;
+      font-size: 9px;
     }
     .todo-check.done { background: #000; color: #fff; }
     .todo-label.done { text-decoration: line-through; color: #aaa; }
 
     /* 底部 */
     #footer {
-      text-align: center;
-      font-size: 10px; color: #bbb;
-      border-top: 1px solid #ddd;
-      padding-top: 6px;
-      margin-top: 8px;
+      text-align: center; font-size: 10px; color: #bbb;
+      border-top: 1px solid #ddd; padding-top: 5px;
+      margin-top: 6px;
     }
     #refresh-btn {
-      display: inline-block; margin-top: 4px;
-      padding: 4px 16px; border: 1px solid #999;
-      background: #fff; font-size: 12px;
+      display: inline-block; margin-top: 3px;
+      padding: 3px 14px; border: 1px solid #999;
+      background: #fff; font-size: 11px;
       cursor: pointer; font-family: Georgia, serif;
     }
   </style>
 </head>
 <body>
+<div id="rotated-wrapper">
 
-<!-- ── 顶栏 ── -->
-<div id="top-bar">
-  <div id="clock-block">
-    <div id="time-display">--:--</div>
-    <div id="date-display">Loading...</div>
-    <div id="weekday-display"></div>
-  </div>
-
-  <div id="weather-today-block">
-    <div id="weather-main">
-      <div id="weather-icon">⏳</div>
-      <div>
-        <div id="weather-temp">--°C</div>
-        <div id="weather-desc">Loading...</div>
+  <!-- 顶栏 -->
+  <div id="top-bar">
+    <div id="clock-block">
+      <div id="time-display">--:--</div>
+      <div id="date-display">Loading...</div>
+      <div id="weekday-display"></div>
+    </div>
+    <div id="weather-today-block">
+      <div id="weather-main">
+        <div id="weather-icon">⏳</div>
+        <div>
+          <div id="weather-temp">--°C</div>
+          <div id="weather-desc">Loading...</div>
+        </div>
+      </div>
+      <div id="weather-detail"></div>
+      <div id="weather-status">open-meteo.com</div>
+    </div>
+    <div id="forecast-block">
+      <div id="forecast-row">
+        <div class="fc-day"><div class="fc-label">--</div><div class="fc-icon">⏳</div></div>
       </div>
     </div>
-    <div id="weather-detail"></div>
-    <div id="weather-status">open-meteo.com</div>
   </div>
 
-  <div id="forecast-block">
-    <div id="forecast-row">
-      <div class="fc-day"><div class="fc-label">--</div><div class="fc-icon">⏳</div></div>
+  <!-- 主体 -->
+  <div id="main-body">
+    <div id="cal-section">
+      <div class="section-title">📅 Today's Calendar</div>
+      <div id="cal-list"><div class="no-event">Loading...</div></div>
+      <div id="cal-status"></div>
     </div>
-  </div>
-</div>
-
-<!-- ── 主体 ── -->
-<div id="main-body">
-
-  <!-- 日历 -->
-  <div id="cal-section">
-    <div class="section-title">📅 Today's Calendar</div>
-    <div id="cal-list"><div class="no-event">Loading...</div></div>
-    <div id="cal-status"></div>
-  </div>
-
-  <!-- 右侧 -->
-  <div id="right-col">
-    <div id="todo-section">
-      <div class="section-title">✓ To-Do</div>
-      <div id="todo-list"></div>
+    <div id="right-col">
+      <div id="todo-section">
+        <div class="section-title">✓ To-Do</div>
+        <div id="todo-list"></div>
+      </div>
     </div>
   </div>
 
-</div>
+  <!-- 底部 -->
+  <div id="footer">
+    Updated: <span id="last-update">--</span> &nbsp;·&nbsp;
+    <button id="refresh-btn" onclick="location.reload()">↺ Refresh</button>
+  </div>
 
-<!-- 底部 -->
-<div id="footer">
-  Updated: <span id="last-update">--</span> &nbsp;·&nbsp;
-  <button id="refresh-btn" onclick="location.reload()">↺ Refresh</button>
-</div>
+</div><!-- end rotated-wrapper -->
 
 <script>
 // ════════════════════════════════════════════
@@ -248,17 +246,13 @@ var CFG = {
   lat: 41.4993,
   lon: -81.6944,
   timezone: "America/New_York",
-  tempUnit: "celsius",        // ← 摄氏度
+  tempUnit: "celsius",
   forecastDays: 7,
-
-  // ★ 填入你的 ICS 链接（滴答清单 或 Google Calendar）
   calendarICS: [
     "webcal://dida365.com/pub/calendar/feeds/wx56bkaluv12/basic.ics"
     // "https://dida365.com/api/v2/calendar/subscribe/YOUR_TOKEN.ics"
   ],
   corsProxy: "https://api.allorigins.win/raw?url=",
-
-  // 手动待办
   todos: [
     "Reply advisor email",
     "Finish ROOT analysis script",
@@ -268,13 +262,12 @@ var CFG = {
 };
 
 // ════════════════════════════════════════════
-//  防休眠
+//  防休眠 + 自动刷新
 // ════════════════════════════════════════════
 setInterval(function() {
   window.scrollBy(0, 1);
   setTimeout(function(){ window.scrollBy(0, -1); }, 500);
 }, 240000);
-// 每30分钟自动刷新
 setTimeout(function(){ location.reload(); }, 1800000);
 
 // ════════════════════════════════════════════
@@ -291,7 +284,7 @@ function updateClock() {
   document.getElementById('date-display').textContent =
     MONTHS[n.getMonth()] + ' ' + n.getDate() + ', ' + n.getFullYear();
   document.getElementById('weekday-display').textContent = WEEKS[n.getDay()];
-  document.getElementById('last-update').textContent = h + ':' + m + ':' + pad(n.getSeconds());
+  document.getElementById('last-update').textContent = h+':'+m+':'+pad(n.getSeconds());
 }
 updateClock();
 setInterval(updateClock, 30000);
@@ -326,68 +319,53 @@ function fetchWeather() {
 
   ajax(url, function(txt) {
     try {
-      var d = JSON.parse(txt);
-      var c = d.current;
-      var code = c.weathercode;
-      var unit = "°C";
-      document.getElementById('weather-icon').textContent = WMO_ICON[code] || "🌡";
-      document.getElementById('weather-temp').textContent = Math.round(c.temperature_2m) + unit;
-      document.getElementById('weather-desc').textContent = WMO_DESC[code] || "Unknown";
+      var d = JSON.parse(txt), c = d.current, code = c.weathercode;
+      document.getElementById('weather-icon').textContent = WMO_ICON[code]||"🌡";
+      document.getElementById('weather-temp').textContent = Math.round(c.temperature_2m)+"°C";
+      document.getElementById('weather-desc').textContent = WMO_DESC[code]||"Unknown";
       document.getElementById('weather-detail').textContent =
-        "Feels " + Math.round(c.apparent_temperature) + unit +
-        "  ·  " + c.relativehumidity_2m + "% RH" +
-        "  ·  " + Math.round(c.windspeed_10m) + " mph";
-      document.getElementById('weather-status').textContent =
-        "📍 " + CFG.timezone + "  ·  open-meteo.com";
+        "Feels "+Math.round(c.apparent_temperature)+"°C  ·  "+c.relativehumidity_2m+"% RH  ·  "+Math.round(c.windspeed_10m)+" mph";
+      document.getElementById('weather-status').textContent = "📍 "+CFG.timezone+"  ·  open-meteo.com";
 
-      var daily = d.daily;
-      var html = '';
+      var daily = d.daily, html = '';
       for (var i = 0; i < daily.time.length; i++) {
-        var dt = new Date(daily.time[i] + 'T12:00:00');
-        var label = i === 0 ? "Today" : DAY_SHORT[dt.getDay()];
+        var dt = new Date(daily.time[i]+'T12:00:00');
+        var label = i===0?"Today":DAY_SHORT[dt.getDay()];
         var fc = daily.weathercode[i];
         var hi = Math.round(daily.temperature_2m_max[i]);
         var lo = Math.round(daily.temperature_2m_min[i]);
         var pop = daily.precipitation_probability_max[i];
-        html += '<div class="fc-day">' +
-          '<div class="fc-label">' + label + '</div>' +
-          '<div class="fc-icon">' + (WMO_ICON[fc]||"🌡") + '</div>' +
-          '<div><span class="fc-hi">' + hi + '</span>' +
-          '<span class="fc-lo"> /' + lo + unit + '</span></div>' +
-          (pop > 20 ? '<div class="fc-pop">💧' + pop + '%</div>' : '') +
+        html += '<div class="fc-day">'+
+          '<div class="fc-label">'+label+'</div>'+
+          '<div class="fc-icon">'+(WMO_ICON[fc]||"🌡")+'</div>'+
+          '<div><span class="fc-hi">'+hi+'</span><span class="fc-lo">/'+lo+'°</span></div>'+
+          (pop>20?'<div class="fc-pop">💧'+pop+'%</div>':'')+
           '</div>';
       }
       document.getElementById('forecast-row').innerHTML = html;
     } catch(e) {
-      document.getElementById('weather-desc').textContent = "Error: " + e.message;
+      document.getElementById('weather-desc').textContent = "Error: "+e.message;
     }
-  }, function(s) {
-    document.getElementById('weather-desc').textContent = "Network error (" + s + ")";
+  }, function(s){
+    document.getElementById('weather-desc').textContent = "Network error ("+s+")";
   });
 }
 fetchWeather();
 
 // ════════════════════════════════════════════
-//  ICS Calendar Parser
+//  ICS Calendar
 // ════════════════════════════════════════════
 function fetchCalendars() {
-  var urls = CFG.calendarICS;
-  var allEvents = [];
-  var pending = urls.length;
-  if (pending === 0) { renderCalendar([]); return; }
-
+  var urls = CFG.calendarICS, allEvents = [], pending = urls.length;
+  if (!pending) { renderCalendar([]); return; }
   for (var i = 0; i < urls.length; i++) {
-    (function(icsUrl) {
-      var proxyUrl = CFG.corsProxy + encodeURIComponent(icsUrl);
-      ajax(proxyUrl, function(txt) {
+    (function(url) {
+      ajax(CFG.corsProxy + encodeURIComponent(url), function(txt) {
         allEvents = allEvents.concat(parseICS(txt));
-        pending--;
-        if (pending === 0) renderCalendar(allEvents);
+        if (!--pending) renderCalendar(allEvents);
       }, function(s) {
-        pending--;
-        document.getElementById('cal-status').textContent =
-          "⚠ Calendar error (" + s + ") — check ICS URL";
-        if (pending === 0) renderCalendar(allEvents);
+        document.getElementById('cal-status').textContent = "⚠ Calendar error ("+s+")";
+        if (!--pending) renderCalendar(allEvents);
       });
     })(urls[i]);
   }
@@ -395,167 +373,132 @@ function fetchCalendars() {
 
 function parseICS(text) {
   var events = [];
-  // 处理折行
-  text = text.replace(/\r\n[ \t]/g, '').replace(/\n[ \t]/g, '');
+  text = text.replace(/\r\n[ \t]/g,'').replace(/\n[ \t]/g,'');
   var lines = text.split(/\r\n|\n/);
   var inEvent = false, ev = {};
   var today = new Date();
-  var todayStr = today.getFullYear() + pad(today.getMonth()+1) + pad(today.getDate());
-
+  var todayStr = today.getFullYear()+pad(today.getMonth()+1)+pad(today.getDate());
   for (var i = 0; i < lines.length; i++) {
     var line = lines[i];
-    if (line === 'BEGIN:VEVENT') { inEvent = true; ev = {}; continue; }
-    if (line === 'END:VEVENT') {
-      inEvent = false;
-      if (isToday(ev, todayStr)) events.push(ev);
-      continue;
-    }
+    if (line==='BEGIN:VEVENT'){inEvent=true;ev={};continue;}
+    if (line==='END:VEVENT'){inEvent=false;if(isToday(ev,todayStr))events.push(ev);continue;}
     if (!inEvent) continue;
     var col = line.indexOf(':');
-    if (col === -1) continue;
-    var key = line.substring(0, col).split(';')[0].toUpperCase();
-    var val = line.substring(col + 1).trim();
-    if (key === 'SUMMARY')     ev.title    = val;
-    else if (key === 'DTSTART') ev.dtstart  = val;
-    else if (key === 'DTEND')   ev.dtend    = val;
-    else if (key === 'LOCATION') ev.location = val;
-    else if (key === 'DESCRIPTION') ev.desc = val.substring(0, 80);
+    if (col===-1) continue;
+    var key = line.substring(0,col).split(';')[0].toUpperCase();
+    var val = line.substring(col+1).trim();
+    if (key==='SUMMARY') ev.title=val;
+    else if (key==='DTSTART') ev.dtstart=val;
+    else if (key==='DTEND') ev.dtend=val;
+    else if (key==='LOCATION') ev.location=val;
+    else if (key==='DESCRIPTION') ev.desc=val.substring(0,60);
   }
   return events;
 }
 
 function isToday(ev, todayStr) {
   if (!ev.dtstart) return false;
-  var ds = ev.dtstart.replace(/T.*/, '');
-  if (ds === todayStr) return true;
+  var ds = ev.dtstart.replace(/T.*/,'');
+  if (ds===todayStr) return true;
   if (ev.dtend) {
-    var de = ev.dtend.replace(/T.*/, '');
-    // all-day end is exclusive (next day), so de > todayStr means ends after today
-    if (ds < todayStr && de > todayStr) return true;
+    var de = ev.dtend.replace(/T.*/,'');
+    if (ds<todayStr && de>todayStr) return true;
   }
   return false;
 }
 
 function parseTimeLocal(dtstr) {
-  if (!dtstr || dtstr.length <= 8) return null;
-  var t = dtstr.replace(/Z$/, '');
-  var yr = parseInt(t.substring(0,4));
-  var mo = parseInt(t.substring(4,6)) - 1;
-  var dy = parseInt(t.substring(6,8));
-  var hh = parseInt(t.substring(9,11));
-  var mm = parseInt(t.substring(11,13));
-  if (dtstr.indexOf('Z') !== -1) {
-    var d = new Date(Date.UTC(yr, mo, dy, hh, mm, 0));
-    return { h: d.getHours(), m: d.getMinutes() };
+  if (!dtstr||dtstr.length<=8) return null;
+  var t = dtstr.replace(/Z$/,'');
+  var yr=parseInt(t.substring(0,4)), mo=parseInt(t.substring(4,6))-1,
+      dy=parseInt(t.substring(6,8)), hh=parseInt(t.substring(9,11)), mm=parseInt(t.substring(11,13));
+  if (dtstr.indexOf('Z')!==-1) {
+    var d = new Date(Date.UTC(yr,mo,dy,hh,mm,0));
+    return {h:d.getHours(),m:d.getMinutes()};
   }
-  return { h: hh, m: mm };
+  return {h:hh,m:mm};
 }
 
 function renderCalendar(events) {
   var list = document.getElementById('cal-list');
-  var now = new Date();
-  var nowMins = now.getHours() * 60 + now.getMinutes();
-
-  if (events.length === 0) {
+  var now = new Date(), nowMins = now.getHours()*60+now.getMinutes();
+  if (!events.length) {
     list.innerHTML = '<div class="no-event">No events today 🎉</div>';
     document.getElementById('cal-status').textContent =
-      CFG.calendarICS[0].indexOf('YOUR') !== -1
-        ? "⚠ Please set your ICS URL in CFG.calendarICS"
-        : "No events found for today";
+      CFG.calendarICS[0].indexOf('YOUR')!==-1 ? "⚠ Set your ICS URL in CFG" : "No events today";
     return;
   }
-
-  // 分离全天和有时间的事件
-  var allDay = [], timed = [];
-  for (var i = 0; i < events.length; i++) {
-    var ev = events[i];
-    if (!ev.dtstart || ev.dtstart.length <= 8) allDay.push(ev);
-    else timed.push(ev);
+  var allDay=[], timed=[];
+  for (var i=0;i<events.length;i++) {
+    (!events[i].dtstart||events[i].dtstart.length<=8) ? allDay.push(events[i]) : timed.push(events[i]);
   }
-  // 按时间排序
-  timed.sort(function(a,b){
-    return a.dtstart < b.dtstart ? -1 : a.dtstart > b.dtstart ? 1 : 0;
-  });
+  timed.sort(function(a,b){return a.dtstart<b.dtstart?-1:a.dtstart>b.dtstart?1:0;});
 
-  var html = '';
-
-  // 全天事件
-  for (var i = 0; i < allDay.length; i++) {
-    var ev = allDay[i];
-    html += '<div class="cal-event cal-allday">' +
-      '<div class="cal-time" style="color:#555;font-style:italic">All day</div>' +
-      '<div class="cal-dot"></div>' +
-      '<div class="cal-body">' +
-      '<div class="cal-title">' + (ev.title||'(No title)') + '</div>' +
-      (ev.location ? '<div class="cal-meta">📍 ' + ev.location + '</div>' : '') +
+  var html='';
+  for (var i=0;i<allDay.length;i++) {
+    var ev=allDay[i];
+    html+='<div class="cal-event cal-allday">'+
+      '<div class="cal-time" style="color:#555;font-style:italic">All day</div>'+
+      '<div class="cal-dot"></div>'+
+      '<div class="cal-body"><div class="cal-title">'+(ev.title||'(No title)')+'</div>'+
+      (ev.location?'<div class="cal-meta">📍 '+ev.location+'</div>':'')+
       '</div></div>';
   }
-
-  // 有时间的事件
-  for (var i = 0; i < timed.length; i++) {
-    var ev = timed[i];
-    var t = parseTimeLocal(ev.dtstart);
-    var te = ev.dtend ? parseTimeLocal(ev.dtend) : null;
-    var timeStr = t ? pad(t.h) + ':' + pad(t.m) : 'All day';
-    var endStr  = te ? pad(te.h) + ':' + pad(te.m) : '';
-    var evMins  = t ? t.h * 60 + t.m : -1;
-    var evEndMins = te ? te.h * 60 + te.m : evMins + 60;
-
-    var cls = 'cal-event';
-    if (evMins !== -1 && evEndMins < nowMins) cls += ' cal-past';
-    else if (evMins !== -1 && evMins <= nowMins && evEndMins >= nowMins) cls += ' cal-now';
-
-    html += '<div class="' + cls + '">' +
-      '<div class="cal-time">' + timeStr + (endStr ? '<br><span style="font-size:10px;font-weight:normal;color:#888">→ ' + endStr + '</span>' : '') + '</div>' +
-      '<div class="cal-dot"></div>' +
-      '<div class="cal-body">' +
-      '<div class="cal-title">' + (ev.title||'(No title)') + '</div>' +
-      (ev.location ? '<div class="cal-meta">📍 ' + ev.location + '</div>' : '') +
-      (ev.desc ? '<div class="cal-meta" style="font-style:italic">' + ev.desc + '</div>' : '') +
+  for (var i=0;i<timed.length;i++) {
+    var ev=timed[i];
+    var t=parseTimeLocal(ev.dtstart), te=ev.dtend?parseTimeLocal(ev.dtend):null;
+    var timeStr=t?pad(t.h)+':'+pad(t.m):'All day';
+    var endStr=te?pad(te.h)+':'+pad(te.m):'';
+    var evMins=t?t.h*60+t.m:-1;
+    var evEndMins=te?te.h*60+te.m:evMins+60;
+    var cls='cal-event';
+    if (evMins!==-1&&evEndMins<nowMins) cls+=' cal-past';
+    else if (evMins!==-1&&evMins<=nowMins&&evEndMins>=nowMins) cls+=' cal-now';
+    html+='<div class="'+cls+'">'+
+      '<div class="cal-time">'+timeStr+(endStr?'<br><span style="font-size:9px;font-weight:normal;color:#888">→'+endStr+'</span>':'')+
+      '</div><div class="cal-dot"></div>'+
+      '<div class="cal-body"><div class="cal-title">'+(ev.title||'(No title)')+'</div>'+
+      (ev.location?'<div class="cal-meta">📍 '+ev.location+'</div>':'')+
+      (ev.desc?'<div class="cal-meta" style="font-style:italic">'+ev.desc+'</div>':'')+
       '</div></div>';
   }
-
   list.innerHTML = html;
-  document.getElementById('cal-status').textContent =
-    (allDay.length + timed.length) + " event(s) today  ·  ICS Calendar";
+  document.getElementById('cal-status').textContent = (allDay.length+timed.length)+" event(s) · ICS";
 }
-
 fetchCalendars();
 
 // ════════════════════════════════════════════
 //  To-Do
 // ════════════════════════════════════════════
-function renderTodos() {
-  var html = '';
-  for (var i = 0; i < CFG.todos.length; i++) {
-    html += '<div class="todo-item">' +
-      '<div class="todo-check" id="chk-' + i + '" onclick="toggleTodo(' + i + ')"></div>' +
-      '<div class="todo-label" id="lbl-' + i + '">' + CFG.todos[i] + '</div>' +
+(function(){
+  var html='';
+  for (var i=0;i<CFG.todos.length;i++) {
+    html+='<div class="todo-item">'+
+      '<div class="todo-check" id="chk-'+i+'" onclick="toggleTodo('+i+')"></div>'+
+      '<div class="todo-label" id="lbl-'+i+'">'+CFG.todos[i]+'</div>'+
       '</div>';
   }
-  document.getElementById('todo-list').innerHTML = html;
-}
-renderTodos();
+  document.getElementById('todo-list').innerHTML=html;
+})();
 
 function toggleTodo(i) {
-  var chk = document.getElementById('chk-' + i);
-  var lbl = document.getElementById('lbl-' + i);
-  var done = chk.className.indexOf('done') !== -1;
-  chk.className = done ? 'todo-check' : 'todo-check done';
-  chk.textContent = done ? '' : '✓';
-  lbl.className = done ? 'todo-label' : 'todo-label done';
+  var chk=document.getElementById('chk-'+i), lbl=document.getElementById('lbl-'+i);
+  var done=chk.className.indexOf('done')!==-1;
+  chk.className=done?'todo-check':'todo-check done';
+  chk.textContent=done?'':'✓';
+  lbl.className=done?'todo-label':'todo-label done';
 }
 
 // ════════════════════════════════════════════
-//  XHR Utility
+//  XHR
 // ════════════════════════════════════════════
-function ajax(url, onSuccess, onError) {
-  var xhr = new XMLHttpRequest();
-  xhr.open("GET", url, true);
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState !== 4) return;
-    if (xhr.status === 200) onSuccess(xhr.responseText);
-    else if (onError) onError(xhr.status);
+function ajax(url,onSuccess,onError){
+  var xhr=new XMLHttpRequest();
+  xhr.open("GET",url,true);
+  xhr.onreadystatechange=function(){
+    if(xhr.readyState!==4)return;
+    if(xhr.status===200)onSuccess(xhr.responseText);
+    else if(onError)onError(xhr.status);
   };
   xhr.send();
 }
