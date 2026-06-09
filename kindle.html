@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=700, initial-scale=1.0">
+  <title>Kindle Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #fff; color: #000;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 15px; padding: 10px;
+      max-width: 700px; margin: 0 auto;
+    }
+
+    /* ── Clock ── */
+    #clock-section {
+      text-align: center;
+      border-bottom: 3px double #000;
+      padding-bottom: 8px; margin-bottom: 10px;
+    }
+    #time-display { font-size: 52px; font-weight: bold; letter-spacing: 4px; line-height: 1; }
+    #date-display { font-size: 17px; margin-top: 3px; }
+    #weekday-display { font-size: 13px; color: #444; margin-top: 2px; }
+
+    /* ── Sections ── */
+    .card {
+      border: 2px solid #000;
+      padding: 9px 13px;
+      margin-bottom: 10px;
+    }
+    .section-title {
+      font-size: 12px; font-weight: bold;
+      letter-spacing: 2px; text-transform: uppercase;
+      border-bottom: 1px solid #000;
+      padding-bottom: 4px; margin-bottom: 8px;
+    }
+
+    /* ── Weather Today ── */
+    #weather-main {
+      display: flex; align-items: center; gap: 14px;
+      margin-bottom: 8px;
+    }
+    #weather-icon { font-size: 38px; line-height: 1; }
+    #weather-temp { font-size: 30px; font-weight: bold; }
+    #weather-desc { font-size: 14px; color: #333; }
+    #weather-detail { font-size: 12px; color: #555; margin-top: 3px; }
+
+    /* ── Forecast Row ── */
+    #forecast-row {
+      display: flex; gap: 0;
+      border-top: 1px solid #aaa;
+      padding-top: 7px;
+    }
+    .fc-day {
+      flex: 1; text-align: center;
+      border-right: 1px dotted #aaa;
+      padding: 2px 4px;
+    }
+    .fc-day:last-child { border-right: none; }
+    .fc-label { font-size: 11px; font-weight: bold; }
+    .fc-icon { font-size: 18px; margin: 2px 0; }
+    .fc-temp { font-size: 11px; }
+    .fc-hi { font-weight: bold; }
+    .fc-lo { color: #666; }
+    #weather-status { font-size: 11px; color: #888; text-align: right; margin-top: 5px; }
+
+    /* ── Calendar ── */
+    .cal-event {
+      display: flex; gap: 8px;
+      padding: 5px 0;
+      border-bottom: 1px dotted #bbb;
+      align-items: flex-start;
+    }
+    .cal-event:last-child { border-bottom: none; }
+    .cal-time {
+      font-size: 12px; font-weight: bold;
+      min-width: 50px; padding-top: 1px;
+      font-family: monospace; color: #222;
+    }
+    .cal-text { font-size: 14px; flex: 1; }
+    .cal-tag {
+      font-size: 10px; border: 1px solid #555;
+      padding: 1px 4px; white-space: nowrap; color: #333;
+    }
+    .cal-past { opacity: 0.4; }
+    .cal-now { font-weight: bold; }
+    .cal-now .cal-time::before { content: "▶ "; }
+    .no-event { font-size: 13px; color: #777; text-align: center; padding: 8px 0; }
+    #cal-status { font-size: 11px; color: #888; text-align: right; margin-top: 4px; }
+
+    /* ── Footer ── */
+    #footer {
+      text-align: center; font-size: 11px; color: #999;
+      border-top: 1px solid #ccc; padding-top: 7px;
+    }
+    #refresh-btn {
+      display: inline-block; margin-top: 5px;
+      padding: 5px 18px; border: 2px solid #000;
+      background: #fff; font-size: 13px;
+      cursor: pointer; font-family: Georgia, serif;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Clock -->
+<div id="clock-section">
+  <div id="time-display">--:--</div>
+  <div id="date-display">Loading...</div>
+  <div id="weekday-display"></div>
+</div>
+
+<!-- Weather -->
+<div class="card">
+  <div class="section-title">☁ Weather Forecast</div>
+  <div id="weather-main">
+    <div id="weather-icon">⏳</div>
+    <div>
+      <div id="weather-temp">--°F</div>
+      <div id="weather-desc">Loading...</div>
+      <div id="weather-detail"></div>
+    </div>
+  </div>
+  <div id="forecast-row">
+    <div class="fc-day"><div class="fc-label">--</div><div class="fc-icon">--</div><div class="fc-temp">--</div></div>
+  </div>
+  <div id="weather-status">Connecting to open-meteo.com...</div>
+</div>
+
+<!-- Google Calendar -->
+<div class="card">
+  <div class="section-title">📅 Google Calendar — Today</div>
+  <div id="cal-list"><div class="no-event">Loading calendar...</div></div>
+  <div id="cal-status"></div>
+</div>
+
+<!-- Footer -->
+<div id="footer">
+  Updated: <span id="last-update">--</span>
+  <br>
+  <button id="refresh-btn" onclick="location.reload()">↺ Refresh Page</button>
+</div>
+
+<script>
+// ════════════════════════════════════════════
+//  ★ CONFIG — 修改这里 ★
+// ════════════════════════════════════════════
+var CFG = {
+  lat: 41.4993,          // 纬度 (Cleveland, OH)
+  lon: -81.6944,         // 经度
+  timezone: "America/New_York",
+  tempUnit: "fahrenheit",  // "fahrenheit" 或 "celsius"
+  forecastDays: 5,         // 预报天数
+
+  // ★ 把你的 Google Calendar ICS 公开链接填在这里
+  // 格式: https://calendar.google.com/calendar/ical/xxxxx/public/basic.ics
+  // 如果有多个日历，全部加进数组
+  calendarICS: [
+    "https://calendar.google.com/calendar/ical/YOUR_CALENDAR_ID/public/basic.ics"
+  ],
+
+  // CORS 代理（解决 Kindle 跨域问题）
+  // 免费代理: https://api.allorigins.win/raw?url=
+  corsProxy: "https://api.allorigins.win/raw?url="
+};
+
+// ════════════════════════════════════════════
+//  Clock
+// ════════════════════════════════════════════
+var WEEKS  = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+var MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+function updateClock() {
+  var n = new Date();
+  var h = pad(n.getHours()), m = pad(n.getMinutes());
+  document.getElementById('time-display').textContent = h + ':' + m;
+  document.getElementById('date-display').textContent =
+    MONTHS[n.getMonth()] + ' ' + n.getDate() + ', ' + n.getFullYear();
+  document.getElementById('weekday-display').textContent = WEEKS[n.getDay()];
+  document.getElementById('last-update').textContent =
+    h + ':' + m + ':' + pad(n.getSeconds());
+}
+function pad(x){ return String(x).padStart(2,'0'); }
+updateClock();
+setInterval(updateClock, 30000);
+
+// ════════════════════════════════════════════
+//  Weather — open-meteo (no API key needed)
+// ════════════════════════════════════════════
+var WMO_DESC = {
+  0:"Clear sky",1:"Mainly clear",2:"Partly cloudy",3:"Overcast",
+  45:"Fog",48:"Icy fog",51:"Light drizzle",53:"Drizzle",55:"Heavy drizzle",
+  61:"Light rain",63:"Rain",65:"Heavy rain",71:"Light snow",73:"Snow",
+  75:"Heavy snow",77:"Snow grains",80:"Light showers",81:"Showers",
+  82:"Heavy showers",85:"Snow showers",86:"Heavy snow showers",
+  95:"Thunderstorm",96:"Thunderstorm+hail",99:"Thunderstorm+hail"
+};
+var WMO_ICON = {
+  0:"☀️",1:"🌤",2:"⛅",3:"☁️",45:"🌫",48:"🌫",
+  51:"🌦",53:"🌧",55:"🌧",61:"🌦",63:"🌧",65:"🌧",
+  71:"🌨",73:"❄️",75:"❄️",77:"🌨",80:"🌦",81:"🌧",
+  82:"⛈",85:"🌨",86:"❄️",95:"⛈",96:"⛈",99:"⛈"
+};
+var DAY_SHORT = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+function fetchWeather() {
+  var url = "https://api.open-meteo.com/v1/forecast" +
+    "?latitude=" + CFG.lat + "&longitude=" + CFG.lon +
+    "&current=temperature_2m,weathercode,windspeed_10m,relativehumidity_2m,apparent_temperature" +
+    "&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max" +
+    "&temperature_unit=" + CFG.tempUnit +
+    "&windspeed_unit=mph&timezone=" + encodeURIComponent(CFG.timezone) +
+    "&forecast_days=" + CFG.forecastDays;
+
+  ajax(url, function(txt) {
+    try {
+      var d = JSON.parse(txt);
+      var c = d.current;
+      var code = c.weathercode;
+      var unit = CFG.tempUnit === "fahrenheit" ? "°F" : "°C";
+
+      document.getElementById('weather-icon').textContent = WMO_ICON[code] || "🌡";
+      document.getElementById('weather-temp').textContent = Math.round(c.temperature_2m) + unit;
+      document.getElementById('weather-desc').textContent = WMO_DESC[code] || "Unknown";
+      document.getElementById('weather-detail').textContent =
+        "Feels " + Math.round(c.apparent_temperature) + unit +
+        "  ·  Humidity " + c.relativehumidity_2m + "%" +
+        "  ·  Wind " + Math.round(c.windspeed_10m) + " mph";
+      document.getElementById('weather-status').textContent =
+        "📍 " + CFG.timezone + "  ·  open-meteo.com";
+
+      // Forecast
+      var daily = d.daily;
+      var html = '';
+      for (var i = 0; i < daily.time.length; i++) {
+        var dt = new Date(daily.time[i] + 'T12:00:00');
+        var label = i === 0 ? "Today" : DAY_SHORT[dt.getDay()];
+        var fc = daily.weathercode[i];
+        var hi = Math.round(daily.temperature_2m_max[i]);
+        var lo = Math.round(daily.temperature_2m_min[i]);
+        var pop = daily.precipitation_probability_max[i];
+        html += '<div class="fc-day">' +
+          '<div class="fc-label">' + label + '</div>' +
+          '<div class="fc-icon">' + (WMO_ICON[fc]||"🌡") + '</div>' +
+          '<div class="fc-temp"><span class="fc-hi">' + hi + '</span>' +
+          '<span class="fc-lo"> / ' + lo + unit + '</span></div>' +
+          (pop > 20 ? '<div style="font-size:10px;color:#555">💧' + pop + '%</div>' : '') +
+          '</div>';
+      }
+      document.getElementById('forecast-row').innerHTML = html;
+    } catch(e) {
+      document.getElementById('weather-desc').textContent = "Parse error: " + e.message;
+    }
+  }, function(status) {
+    document.getElementById('weather-desc').textContent = "Network error (" + status + ")";
+  });
+}
+fetchWeather();
+
+// ════════════════════════════════════════════
+//  ICS Parser — Google Calendar
+// ════════════════════════════════════════════
+function fetchCalendars() {
+  var urls = CFG.calendarICS;
+  var allEvents = [];
+  var pending = urls.length;
+
+  if (pending === 0) {
+    renderCalendar([]);
+    return;
+  }
+
+  for (var i = 0; i < urls.length; i++) {
+    (function(icsUrl) {
+      var proxyUrl = CFG.corsProxy + encodeURIComponent(icsUrl);
+      ajax(proxyUrl, function(txt) {
+        var evts = parseICS(txt);
+        allEvents = allEvents.concat(evts);
+        pending--;
+        if (pending === 0) renderCalendar(allEvents);
+      }, function(status) {
+        pending--;
+        document.getElementById('cal-status').textContent =
+          "⚠ Calendar fetch error (" + status + "). Check ICS URL & CORS proxy.";
+        if (pending === 0) renderCalendar(allEvents);
+      });
+    })(urls[i]);
+  }
+}
+
+// 解析 ICS 文本，返回今天的事件数组
+function parseICS(text) {
+  var events = [];
+  var lines = text.replace(/\r\n /g, '').replace(/\r\n\t/g, '').split(/\r\n|\n/);
+  var inEvent = false;
+  var ev = {};
+  var today = new Date();
+  var todayStr = today.getFullYear() +
+    pad(today.getMonth()+1) + pad(today.getDate());
+
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i];
+    if (line === 'BEGIN:VEVENT') { inEvent = true; ev = {}; continue; }
+    if (line === 'END:VEVENT') {
+      inEvent = false;
+      if (isToday(ev, todayStr)) events.push(ev);
+      continue;
+    }
+    if (!inEvent) continue;
+
+    if (line.indexOf('SUMMARY') === 0) {
+      ev.title = line.replace(/^SUMMARY[^:]*:/, '').trim();
+    } else if (line.indexOf('DTSTART') === 0) {
+      ev.dtstart = line.replace(/^DTSTART[^:]*:/, '').trim();
+    } else if (line.indexOf('DTEND') === 0) {
+      ev.dtend = line.replace(/^DTEND[^:]*:/, '').trim();
+    } else if (line.indexOf('LOCATION') === 0) {
+      ev.location = line.replace(/^LOCATION[^:]*:/, '').trim();
+    } else if (line.indexOf('DESCRIPTION') === 0) {
+      ev.desc = line.replace(/^DESCRIPTION[^:]*:/, '').trim();
+    }
+  }
+  return events;
+}
+
+function isToday(ev, todayStr) {
+  if (!ev.dtstart) return false;
+  // All-day: YYYYMMDD; Timed: YYYYMMDDTHHmmssZ
+  var ds = ev.dtstart.replace(/T.*/, '');
+  if (ds === todayStr) return true;
+  // Check recurring / multi-day (simplified: check dtend)
+  if (ev.dtend) {
+    var de = ev.dtend.replace(/T.*/, '');
+    if (de > todayStr && ds <= todayStr) return true;
+  }
+  return false;
+}
+
+function parseTime(dtstr) {
+  if (!dtstr || dtstr.length <= 8) return null; // all-day
+  // YYYYMMDDTHHmmssZ or YYYYMMDDTHHmmss
+  var t = dtstr.replace(/Z$/, '');
+  var h = parseInt(t.substring(9,11));
+  var m = parseInt(t.substring(11,13));
+  // If UTC, convert to local
+  if (dtstr.indexOf('Z') !== -1) {
+    var d = new Date(
+      parseInt(t.substring(0,4)),
+      parseInt(t.substring(4,6))-1,
+      parseInt(t.substring(6,8)),
+      h, m, 0
+    );
+    // treat as UTC
+    var local = new Date(Date.UTC(
+      parseInt(t.substring(0,4)),
+      parseInt(t.substring(4,6))-1,
+      parseInt(t.substring(6,8)),
+      h, m, 0
+    ));
+    return { h: local.getHours(), m: local.getMinutes() };
+  }
+  return { h: h, m: m };
+}
+
+function renderCalendar(events) {
+  var list = document.getElementById('cal-list');
+  var now = new Date();
+  var nowMins = now.getHours() * 60 + now.getMinutes();
+
+  if (events.length === 0) {
+    list.innerHTML = '<div class="no-event">No events today 🎉</div>';
+    document.getElementById('cal-status').textContent =
+      CFG.calendarICS[0].indexOf('YOUR_CALENDAR') !== -1
+        ? "⚠ Please set your ICS URL in CFG.calendarICS"
+        : "Calendar loaded — no events today";
+    return;
+  }
+
+  // Sort by time
+  events.sort(function(a, b) {
+    var ta = a.dtstart || '', tb = b.dtstart || '';
+    return ta < tb ? -1 : ta > tb ? 1 : 0;
+  });
+
+  var html = '';
+  for (var i = 0; i < events.length; i++) {
+    var ev = events[i];
+    var t = parseTime(ev.dtstart);
+    var timeStr = t ? pad(t.h) + ':' + pad(t.m) : 'All day';
+    var evMins = t ? t.h * 60 + t.m : -1;
+
+    var cls = 'cal-event';
+    if (evMins !== -1 && evMins < nowMins) cls += ' cal-past';
+    else if (evMins !== -1 && evMins <= nowMins + 30 && evMins >= nowMins - 15) cls += ' cal-now';
+
+    html += '<div class="' + cls + '">';
+    html += '<div class="cal-time">' + timeStr + '</div>';
+    html += '<div class="cal-text">' + (ev.title || '(No title)') +
+      (ev.location ? '<br><span style="font-size:11px;color:#666">📍 ' + ev.location + '</span>' : '') +
+      '</div>';
+    html += '</div>';
+  }
+  list.innerHTML = html;
+  document.getElementById('cal-status').textContent =
+    events.length + " event(s) today  ·  Google Calendar ICS";
+}
+
+fetchCalendars();
+
+// ════════════════════════════════════════════
+//  Utility: simple XHR
+// ════════════════════════════════════════════
+function ajax(url, onSuccess, onError) {
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", url, true);
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState !== 4) return;
+    if (xhr.status === 200) onSuccess(xhr.responseText);
+    else if (onError) onError(xhr.status);
+  };
+  xhr.send();
+}
+</script>
+</body>
+</html>
