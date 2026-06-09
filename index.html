@@ -2,174 +2,287 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=700, initial-scale=1.0">
+  <meta name="viewport" content="width=1024, initial-scale=1.0">
   <title>Kindle Dashboard</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       background: #fff; color: #000;
       font-family: Georgia, "Times New Roman", serif;
-      font-size: 15px; padding: 10px;
-      max-width: 700px; margin: 0 auto;
+      font-size: 14px;
+      padding: 10px;
+      width: 1024px;
+      margin: 0 auto;
+      overflow-x: hidden;
     }
 
-    /* ── Clock ── */
-    #clock-section {
-      text-align: center;
+    /* ── 顶栏：时钟 + 天气今日 ── */
+    #top-bar {
+      display: flex;
+      align-items: stretch;
+      gap: 10px;
       border-bottom: 3px double #000;
-      padding-bottom: 8px; margin-bottom: 10px;
-    }
-    #time-display { font-size: 52px; font-weight: bold; letter-spacing: 4px; line-height: 1; }
-    #date-display { font-size: 17px; margin-top: 3px; }
-    #weekday-display { font-size: 13px; color: #444; margin-top: 2px; }
-
-    /* ── Sections ── */
-    .card {
-      border: 2px solid #000;
-      padding: 9px 13px;
+      padding-bottom: 10px;
       margin-bottom: 10px;
     }
-    .section-title {
-      font-size: 12px; font-weight: bold;
-      letter-spacing: 2px; text-transform: uppercase;
-      border-bottom: 1px solid #000;
-      padding-bottom: 4px; margin-bottom: 8px;
-    }
 
-    /* ── Weather Today ── */
-    #weather-main {
-      display: flex; align-items: center; gap: 14px;
-      margin-bottom: 8px;
+    /* 时钟 */
+    #clock-block {
+      text-align: center;
+      min-width: 200px;
+      border-right: 2px solid #000;
+      padding-right: 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
-    #weather-icon { font-size: 38px; line-height: 1; }
-    #weather-temp { font-size: 30px; font-weight: bold; }
-    #weather-desc { font-size: 14px; color: #333; }
-    #weather-detail { font-size: 12px; color: #555; margin-top: 3px; }
+    #time-display { font-size: 54px; font-weight: bold; letter-spacing: 3px; line-height: 1; }
+    #date-display { font-size: 15px; margin-top: 4px; }
+    #weekday-display { font-size: 12px; color: #444; margin-top: 2px; }
 
-    /* ── Forecast Row ── */
+    /* 今日天气 */
+    #weather-today-block {
+      min-width: 180px;
+      border-right: 2px solid #000;
+      padding: 0 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    #weather-main { display: flex; align-items: center; gap: 10px; }
+    #weather-icon { font-size: 36px; line-height: 1; }
+    #weather-temp { font-size: 28px; font-weight: bold; }
+    #weather-desc { font-size: 13px; color: #333; }
+    #weather-detail { font-size: 11px; color: #555; margin-top: 3px; }
+    #weather-status { font-size: 10px; color: #999; margin-top: 4px; }
+
+    /* 预报 */
+    #forecast-block {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
     #forecast-row {
-      display: flex; gap: 0;
-      border-top: 1px solid #aaa;
-      padding-top: 7px;
+      display: flex;
+      gap: 0;
+      height: 100%;
+      align-items: center;
     }
     .fc-day {
-      flex: 1; text-align: center;
+      flex: 1;
+      text-align: center;
       border-right: 1px dotted #aaa;
-      padding: 2px 4px;
+      padding: 4px 2px;
     }
     .fc-day:last-child { border-right: none; }
     .fc-label { font-size: 11px; font-weight: bold; }
-    .fc-icon { font-size: 18px; margin: 2px 0; }
-    .fc-temp { font-size: 11px; }
-    .fc-hi { font-weight: bold; }
-    .fc-lo { color: #666; }
-    #weather-status { font-size: 11px; color: #888; text-align: right; margin-top: 5px; }
+    .fc-icon { font-size: 20px; margin: 3px 0; }
+    .fc-hi { font-weight: bold; font-size: 12px; }
+    .fc-lo { color: #666; font-size: 11px; }
+    .fc-pop { font-size: 10px; color: #555; }
 
-    /* ── Calendar ── */
+    /* ── 主体：左日历 + 右待办 ── */
+    #main-body {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    /* 日历 */
+    #cal-section {
+      flex: 1;
+      border: 2px solid #000;
+      padding: 8px 12px;
+      min-height: 400px;
+    }
+
+    .section-title {
+      font-size: 11px; font-weight: bold;
+      letter-spacing: 2px; text-transform: uppercase;
+      border-bottom: 1px solid #000;
+      padding-bottom: 3px; margin-bottom: 7px;
+    }
+
+    /* 日历：按时间轴显示 */
     .cal-event {
-      display: flex; gap: 8px;
+      display: flex;
+      gap: 8px;
       padding: 5px 0;
-      border-bottom: 1px dotted #bbb;
+      border-bottom: 1px dotted #ccc;
       align-items: flex-start;
     }
     .cal-event:last-child { border-bottom: none; }
     .cal-time {
       font-size: 12px; font-weight: bold;
-      min-width: 50px; padding-top: 1px;
-      font-family: monospace; color: #222;
+      min-width: 55px;
+      font-family: monospace;
+      padding-top: 1px;
+      flex-shrink: 0;
     }
-    .cal-text { font-size: 14px; flex: 1; }
-    .cal-tag {
-      font-size: 10px; border: 1px solid #555;
-      padding: 1px 4px; white-space: nowrap; color: #333;
+    .cal-dot {
+      width: 7px; height: 7px;
+      border: 2px solid #000;
+      border-radius: 50%;
+      margin-top: 4px;
+      flex-shrink: 0;
     }
-    .cal-past { opacity: 0.4; }
-    .cal-now { font-weight: bold; }
+    .cal-body { flex: 1; }
+    .cal-title { font-size: 14px; line-height: 1.3; }
+    .cal-meta { font-size: 11px; color: #666; margin-top: 2px; }
+    .cal-past { opacity: 0.38; }
+    .cal-now .cal-dot { background: #000; }
+    .cal-now .cal-title { font-weight: bold; }
     .cal-now .cal-time::before { content: "▶ "; }
-    .no-event { font-size: 13px; color: #777; text-align: center; padding: 8px 0; }
-    #cal-status { font-size: 11px; color: #888; text-align: right; margin-top: 4px; }
+    .cal-allday .cal-dot { border-radius: 2px; background: #555; border-color: #555; }
+    .no-event { font-size: 13px; color: #777; text-align: center; padding: 20px 0; }
+    #cal-status { font-size: 10px; color: #999; text-align: right; margin-top: 5px; }
 
-    /* ── Footer ── */
+    /* 右侧：待办 */
+    #right-col {
+      width: 240px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    #todo-section {
+      border: 2px solid #000;
+      padding: 8px 12px;
+    }
+    .todo-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 7px;
+      padding: 5px 0;
+      border-bottom: 1px dotted #ccc;
+      font-size: 13px;
+    }
+    .todo-item:last-child { border-bottom: none; }
+    .todo-check {
+      width: 14px; height: 14px;
+      border: 2px solid #000;
+      flex-shrink: 0;
+      margin-top: 2px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 10px;
+    }
+    .todo-check.done { background: #000; color: #fff; }
+    .todo-label.done { text-decoration: line-through; color: #aaa; }
+
+    /* 底部 */
     #footer {
-      text-align: center; font-size: 11px; color: #999;
-      border-top: 1px solid #ccc; padding-top: 7px;
+      text-align: center;
+      font-size: 10px; color: #bbb;
+      border-top: 1px solid #ddd;
+      padding-top: 6px;
+      margin-top: 8px;
     }
     #refresh-btn {
-      display: inline-block; margin-top: 5px;
-      padding: 5px 18px; border: 2px solid #000;
-      background: #fff; font-size: 13px;
+      display: inline-block; margin-top: 4px;
+      padding: 4px 16px; border: 1px solid #999;
+      background: #fff; font-size: 12px;
       cursor: pointer; font-family: Georgia, serif;
     }
   </style>
 </head>
 <body>
 
-<!-- Clock -->
-<div id="clock-section">
-  <div id="time-display">--:--</div>
-  <div id="date-display">Loading...</div>
-  <div id="weekday-display"></div>
-</div>
+<!-- ── 顶栏 ── -->
+<div id="top-bar">
+  <div id="clock-block">
+    <div id="time-display">--:--</div>
+    <div id="date-display">Loading...</div>
+    <div id="weekday-display"></div>
+  </div>
 
-<!-- Weather -->
-<div class="card">
-  <div class="section-title">☁ Weather Forecast</div>
-  <div id="weather-main">
-    <div id="weather-icon">⏳</div>
-    <div>
-      <div id="weather-temp">--°F</div>
-      <div id="weather-desc">Loading...</div>
-      <div id="weather-detail"></div>
+  <div id="weather-today-block">
+    <div id="weather-main">
+      <div id="weather-icon">⏳</div>
+      <div>
+        <div id="weather-temp">--°C</div>
+        <div id="weather-desc">Loading...</div>
+      </div>
+    </div>
+    <div id="weather-detail"></div>
+    <div id="weather-status">open-meteo.com</div>
+  </div>
+
+  <div id="forecast-block">
+    <div id="forecast-row">
+      <div class="fc-day"><div class="fc-label">--</div><div class="fc-icon">⏳</div></div>
     </div>
   </div>
-  <div id="forecast-row">
-    <div class="fc-day"><div class="fc-label">--</div><div class="fc-icon">--</div><div class="fc-temp">--</div></div>
+</div>
+
+<!-- ── 主体 ── -->
+<div id="main-body">
+
+  <!-- 日历 -->
+  <div id="cal-section">
+    <div class="section-title">📅 Today's Calendar</div>
+    <div id="cal-list"><div class="no-event">Loading...</div></div>
+    <div id="cal-status"></div>
   </div>
-  <div id="weather-status">Connecting to open-meteo.com...</div>
+
+  <!-- 右侧 -->
+  <div id="right-col">
+    <div id="todo-section">
+      <div class="section-title">✓ To-Do</div>
+      <div id="todo-list"></div>
+    </div>
+  </div>
+
 </div>
 
-<!-- Google Calendar -->
-<div class="card">
-  <div class="section-title">📅 Google Calendar — Today</div>
-  <div id="cal-list"><div class="no-event">Loading calendar...</div></div>
-  <div id="cal-status"></div>
-</div>
-
-<!-- Footer -->
+<!-- 底部 -->
 <div id="footer">
-  Updated: <span id="last-update">--</span>
-  <br>
-  <button id="refresh-btn" onclick="location.reload()">↺ Refresh Page</button>
+  Updated: <span id="last-update">--</span> &nbsp;·&nbsp;
+  <button id="refresh-btn" onclick="location.reload()">↺ Refresh</button>
 </div>
 
 <script>
 // ════════════════════════════════════════════
-//  ★ CONFIG — 修改这里 ★
+//  ★ CONFIG
 // ════════════════════════════════════════════
 var CFG = {
-  lat: 41.4993,          // 纬度 (Cleveland, OH)
-  lon: -81.6944,         // 经度
+  lat: 41.4993,
+  lon: -81.6944,
   timezone: "America/New_York",
-  tempUnit: "fahrenheit",  // "fahrenheit" 或 "celsius"
-  forecastDays: 5,         // 预报天数
+  tempUnit: "celsius",        // ← 摄氏度
+  forecastDays: 7,
 
-  // ★ 把你的 Google Calendar ICS 公开链接填在这里
-  // 格式: https://calendar.google.com/calendar/ical/xxxxx/public/basic.ics
-  // 如果有多个日历，全部加进数组
+  // ★ 填入你的 ICS 链接（滴答清单 或 Google Calendar）
   calendarICS: [
-    "webcal://dida365.com/pub/calendar/feeds/wx56bkaluv12/basic.ics"
+    "https://calendar.google.com/calendar/ical/YOUR_ID/public/basic.ics"
+    // "https://dida365.com/api/v2/calendar/subscribe/YOUR_TOKEN.ics"
   ],
+  corsProxy: "https://api.allorigins.win/raw?url=",
 
-  // CORS 代理（解决 Kindle 跨域问题）
-  // 免费代理: https://api.allorigins.win/raw?url=
-  corsProxy: "https://api.allorigins.win/raw?url="
+  // 手动待办
+  todos: [
+    "Reply advisor email",
+    "Finish ROOT analysis script",
+    "Meal prep for tomorrow",
+    "Review W&M onboarding docs"
+  ]
 };
+
+// ════════════════════════════════════════════
+//  防休眠
+// ════════════════════════════════════════════
+setInterval(function() {
+  window.scrollBy(0, 1);
+  setTimeout(function(){ window.scrollBy(0, -1); }, 500);
+}, 240000);
+// 每30分钟自动刷新
+setTimeout(function(){ location.reload(); }, 1800000);
 
 // ════════════════════════════════════════════
 //  Clock
 // ════════════════════════════════════════════
 var WEEKS  = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 var MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function pad(x){ return String(x).padStart(2,'0'); }
 
 function updateClock() {
   var n = new Date();
@@ -178,15 +291,13 @@ function updateClock() {
   document.getElementById('date-display').textContent =
     MONTHS[n.getMonth()] + ' ' + n.getDate() + ', ' + n.getFullYear();
   document.getElementById('weekday-display').textContent = WEEKS[n.getDay()];
-  document.getElementById('last-update').textContent =
-    h + ':' + m + ':' + pad(n.getSeconds());
+  document.getElementById('last-update').textContent = h + ':' + m + ':' + pad(n.getSeconds());
 }
-function pad(x){ return String(x).padStart(2,'0'); }
 updateClock();
 setInterval(updateClock, 30000);
 
 // ════════════════════════════════════════════
-//  Weather — open-meteo (no API key needed)
+//  Weather
 // ════════════════════════════════════════════
 var WMO_DESC = {
   0:"Clear sky",1:"Mainly clear",2:"Partly cloudy",3:"Overcast",
@@ -218,19 +329,17 @@ function fetchWeather() {
       var d = JSON.parse(txt);
       var c = d.current;
       var code = c.weathercode;
-      var unit = CFG.tempUnit === "fahrenheit" ? "°F" : "°C";
-
+      var unit = "°C";
       document.getElementById('weather-icon').textContent = WMO_ICON[code] || "🌡";
       document.getElementById('weather-temp').textContent = Math.round(c.temperature_2m) + unit;
       document.getElementById('weather-desc').textContent = WMO_DESC[code] || "Unknown";
       document.getElementById('weather-detail').textContent =
         "Feels " + Math.round(c.apparent_temperature) + unit +
-        "  ·  Humidity " + c.relativehumidity_2m + "%" +
-        "  ·  Wind " + Math.round(c.windspeed_10m) + " mph";
+        "  ·  " + c.relativehumidity_2m + "% RH" +
+        "  ·  " + Math.round(c.windspeed_10m) + " mph";
       document.getElementById('weather-status').textContent =
         "📍 " + CFG.timezone + "  ·  open-meteo.com";
 
-      // Forecast
       var daily = d.daily;
       var html = '';
       for (var i = 0; i < daily.time.length; i++) {
@@ -243,61 +352,55 @@ function fetchWeather() {
         html += '<div class="fc-day">' +
           '<div class="fc-label">' + label + '</div>' +
           '<div class="fc-icon">' + (WMO_ICON[fc]||"🌡") + '</div>' +
-          '<div class="fc-temp"><span class="fc-hi">' + hi + '</span>' +
-          '<span class="fc-lo"> / ' + lo + unit + '</span></div>' +
-          (pop > 20 ? '<div style="font-size:10px;color:#555">💧' + pop + '%</div>' : '') +
+          '<div><span class="fc-hi">' + hi + '</span>' +
+          '<span class="fc-lo"> /' + lo + unit + '</span></div>' +
+          (pop > 20 ? '<div class="fc-pop">💧' + pop + '%</div>' : '') +
           '</div>';
       }
       document.getElementById('forecast-row').innerHTML = html;
     } catch(e) {
-      document.getElementById('weather-desc').textContent = "Parse error: " + e.message;
+      document.getElementById('weather-desc').textContent = "Error: " + e.message;
     }
-  }, function(status) {
-    document.getElementById('weather-desc').textContent = "Network error (" + status + ")";
+  }, function(s) {
+    document.getElementById('weather-desc').textContent = "Network error (" + s + ")";
   });
 }
 fetchWeather();
 
 // ════════════════════════════════════════════
-//  ICS Parser — Google Calendar
+//  ICS Calendar Parser
 // ════════════════════════════════════════════
 function fetchCalendars() {
   var urls = CFG.calendarICS;
   var allEvents = [];
   var pending = urls.length;
-
-  if (pending === 0) {
-    renderCalendar([]);
-    return;
-  }
+  if (pending === 0) { renderCalendar([]); return; }
 
   for (var i = 0; i < urls.length; i++) {
     (function(icsUrl) {
       var proxyUrl = CFG.corsProxy + encodeURIComponent(icsUrl);
       ajax(proxyUrl, function(txt) {
-        var evts = parseICS(txt);
-        allEvents = allEvents.concat(evts);
+        allEvents = allEvents.concat(parseICS(txt));
         pending--;
         if (pending === 0) renderCalendar(allEvents);
-      }, function(status) {
+      }, function(s) {
         pending--;
         document.getElementById('cal-status').textContent =
-          "⚠ Calendar fetch error (" + status + "). Check ICS URL & CORS proxy.";
+          "⚠ Calendar error (" + s + ") — check ICS URL";
         if (pending === 0) renderCalendar(allEvents);
       });
     })(urls[i]);
   }
 }
 
-// 解析 ICS 文本，返回今天的事件数组
 function parseICS(text) {
   var events = [];
-  var lines = text.replace(/\r\n /g, '').replace(/\r\n\t/g, '').split(/\r\n|\n/);
-  var inEvent = false;
-  var ev = {};
+  // 处理折行
+  text = text.replace(/\r\n[ \t]/g, '').replace(/\n[ \t]/g, '');
+  var lines = text.split(/\r\n|\n/);
+  var inEvent = false, ev = {};
   var today = new Date();
-  var todayStr = today.getFullYear() +
-    pad(today.getMonth()+1) + pad(today.getDate());
+  var todayStr = today.getFullYear() + pad(today.getMonth()+1) + pad(today.getDate());
 
   for (var i = 0; i < lines.length; i++) {
     var line = lines[i];
@@ -308,59 +411,44 @@ function parseICS(text) {
       continue;
     }
     if (!inEvent) continue;
-
-    if (line.indexOf('SUMMARY') === 0) {
-      ev.title = line.replace(/^SUMMARY[^:]*:/, '').trim();
-    } else if (line.indexOf('DTSTART') === 0) {
-      ev.dtstart = line.replace(/^DTSTART[^:]*:/, '').trim();
-    } else if (line.indexOf('DTEND') === 0) {
-      ev.dtend = line.replace(/^DTEND[^:]*:/, '').trim();
-    } else if (line.indexOf('LOCATION') === 0) {
-      ev.location = line.replace(/^LOCATION[^:]*:/, '').trim();
-    } else if (line.indexOf('DESCRIPTION') === 0) {
-      ev.desc = line.replace(/^DESCRIPTION[^:]*:/, '').trim();
-    }
+    var col = line.indexOf(':');
+    if (col === -1) continue;
+    var key = line.substring(0, col).split(';')[0].toUpperCase();
+    var val = line.substring(col + 1).trim();
+    if (key === 'SUMMARY')     ev.title    = val;
+    else if (key === 'DTSTART') ev.dtstart  = val;
+    else if (key === 'DTEND')   ev.dtend    = val;
+    else if (key === 'LOCATION') ev.location = val;
+    else if (key === 'DESCRIPTION') ev.desc = val.substring(0, 80);
   }
   return events;
 }
 
 function isToday(ev, todayStr) {
   if (!ev.dtstart) return false;
-  // All-day: YYYYMMDD; Timed: YYYYMMDDTHHmmssZ
   var ds = ev.dtstart.replace(/T.*/, '');
   if (ds === todayStr) return true;
-  // Check recurring / multi-day (simplified: check dtend)
   if (ev.dtend) {
     var de = ev.dtend.replace(/T.*/, '');
-    if (de > todayStr && ds <= todayStr) return true;
+    // all-day end is exclusive (next day), so de > todayStr means ends after today
+    if (ds < todayStr && de > todayStr) return true;
   }
   return false;
 }
 
-function parseTime(dtstr) {
-  if (!dtstr || dtstr.length <= 8) return null; // all-day
-  // YYYYMMDDTHHmmssZ or YYYYMMDDTHHmmss
+function parseTimeLocal(dtstr) {
+  if (!dtstr || dtstr.length <= 8) return null;
   var t = dtstr.replace(/Z$/, '');
-  var h = parseInt(t.substring(9,11));
-  var m = parseInt(t.substring(11,13));
-  // If UTC, convert to local
+  var yr = parseInt(t.substring(0,4));
+  var mo = parseInt(t.substring(4,6)) - 1;
+  var dy = parseInt(t.substring(6,8));
+  var hh = parseInt(t.substring(9,11));
+  var mm = parseInt(t.substring(11,13));
   if (dtstr.indexOf('Z') !== -1) {
-    var d = new Date(
-      parseInt(t.substring(0,4)),
-      parseInt(t.substring(4,6))-1,
-      parseInt(t.substring(6,8)),
-      h, m, 0
-    );
-    // treat as UTC
-    var local = new Date(Date.UTC(
-      parseInt(t.substring(0,4)),
-      parseInt(t.substring(4,6))-1,
-      parseInt(t.substring(6,8)),
-      h, m, 0
-    ));
-    return { h: local.getHours(), m: local.getMinutes() };
+    var d = new Date(Date.UTC(yr, mo, dy, hh, mm, 0));
+    return { h: d.getHours(), m: d.getMinutes() };
   }
-  return { h: h, m: m };
+  return { h: hh, m: mm };
 }
 
 function renderCalendar(events) {
@@ -371,45 +459,95 @@ function renderCalendar(events) {
   if (events.length === 0) {
     list.innerHTML = '<div class="no-event">No events today 🎉</div>';
     document.getElementById('cal-status').textContent =
-      CFG.calendarICS[0].indexOf('YOUR_CALENDAR') !== -1
+      CFG.calendarICS[0].indexOf('YOUR') !== -1
         ? "⚠ Please set your ICS URL in CFG.calendarICS"
-        : "Calendar loaded — no events today";
+        : "No events found for today";
     return;
   }
 
-  // Sort by time
-  events.sort(function(a, b) {
-    var ta = a.dtstart || '', tb = b.dtstart || '';
-    return ta < tb ? -1 : ta > tb ? 1 : 0;
+  // 分离全天和有时间的事件
+  var allDay = [], timed = [];
+  for (var i = 0; i < events.length; i++) {
+    var ev = events[i];
+    if (!ev.dtstart || ev.dtstart.length <= 8) allDay.push(ev);
+    else timed.push(ev);
+  }
+  // 按时间排序
+  timed.sort(function(a,b){
+    return a.dtstart < b.dtstart ? -1 : a.dtstart > b.dtstart ? 1 : 0;
   });
 
   var html = '';
-  for (var i = 0; i < events.length; i++) {
-    var ev = events[i];
-    var t = parseTime(ev.dtstart);
+
+  // 全天事件
+  for (var i = 0; i < allDay.length; i++) {
+    var ev = allDay[i];
+    html += '<div class="cal-event cal-allday">' +
+      '<div class="cal-time" style="color:#555;font-style:italic">All day</div>' +
+      '<div class="cal-dot"></div>' +
+      '<div class="cal-body">' +
+      '<div class="cal-title">' + (ev.title||'(No title)') + '</div>' +
+      (ev.location ? '<div class="cal-meta">📍 ' + ev.location + '</div>' : '') +
+      '</div></div>';
+  }
+
+  // 有时间的事件
+  for (var i = 0; i < timed.length; i++) {
+    var ev = timed[i];
+    var t = parseTimeLocal(ev.dtstart);
+    var te = ev.dtend ? parseTimeLocal(ev.dtend) : null;
     var timeStr = t ? pad(t.h) + ':' + pad(t.m) : 'All day';
-    var evMins = t ? t.h * 60 + t.m : -1;
+    var endStr  = te ? pad(te.h) + ':' + pad(te.m) : '';
+    var evMins  = t ? t.h * 60 + t.m : -1;
+    var evEndMins = te ? te.h * 60 + te.m : evMins + 60;
 
     var cls = 'cal-event';
-    if (evMins !== -1 && evMins < nowMins) cls += ' cal-past';
-    else if (evMins !== -1 && evMins <= nowMins + 30 && evMins >= nowMins - 15) cls += ' cal-now';
+    if (evMins !== -1 && evEndMins < nowMins) cls += ' cal-past';
+    else if (evMins !== -1 && evMins <= nowMins && evEndMins >= nowMins) cls += ' cal-now';
 
-    html += '<div class="' + cls + '">';
-    html += '<div class="cal-time">' + timeStr + '</div>';
-    html += '<div class="cal-text">' + (ev.title || '(No title)') +
-      (ev.location ? '<br><span style="font-size:11px;color:#666">📍 ' + ev.location + '</span>' : '') +
-      '</div>';
-    html += '</div>';
+    html += '<div class="' + cls + '">' +
+      '<div class="cal-time">' + timeStr + (endStr ? '<br><span style="font-size:10px;font-weight:normal;color:#888">→ ' + endStr + '</span>' : '') + '</div>' +
+      '<div class="cal-dot"></div>' +
+      '<div class="cal-body">' +
+      '<div class="cal-title">' + (ev.title||'(No title)') + '</div>' +
+      (ev.location ? '<div class="cal-meta">📍 ' + ev.location + '</div>' : '') +
+      (ev.desc ? '<div class="cal-meta" style="font-style:italic">' + ev.desc + '</div>' : '') +
+      '</div></div>';
   }
+
   list.innerHTML = html;
   document.getElementById('cal-status').textContent =
-    events.length + " event(s) today  ·  Google Calendar ICS";
+    (allDay.length + timed.length) + " event(s) today  ·  ICS Calendar";
 }
 
 fetchCalendars();
 
 // ════════════════════════════════════════════
-//  Utility: simple XHR
+//  To-Do
+// ════════════════════════════════════════════
+function renderTodos() {
+  var html = '';
+  for (var i = 0; i < CFG.todos.length; i++) {
+    html += '<div class="todo-item">' +
+      '<div class="todo-check" id="chk-' + i + '" onclick="toggleTodo(' + i + ')"></div>' +
+      '<div class="todo-label" id="lbl-' + i + '">' + CFG.todos[i] + '</div>' +
+      '</div>';
+  }
+  document.getElementById('todo-list').innerHTML = html;
+}
+renderTodos();
+
+function toggleTodo(i) {
+  var chk = document.getElementById('chk-' + i);
+  var lbl = document.getElementById('lbl-' + i);
+  var done = chk.className.indexOf('done') !== -1;
+  chk.className = done ? 'todo-check' : 'todo-check done';
+  chk.textContent = done ? '' : '✓';
+  lbl.className = done ? 'todo-label' : 'todo-label done';
+}
+
+// ════════════════════════════════════════════
+//  XHR Utility
 // ════════════════════════════════════════════
 function ajax(url, onSuccess, onError) {
   var xhr = new XMLHttpRequest();
